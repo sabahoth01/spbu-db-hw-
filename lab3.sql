@@ -26,7 +26,7 @@ WHERE total_sales > (SELECT AVG(total_sales) FROM employee_sales_stats);
 WITH RECURSIVE employee_hierarchy AS (
     SELECT employee_id, name, manager_id
     FROM employees
-    WHERE manager_id = 1
+    WHERE manager_id =  1 --<specific_manager_id> мЖНО ЛЮБОЙ ИД
 
     UNION ALL
 
