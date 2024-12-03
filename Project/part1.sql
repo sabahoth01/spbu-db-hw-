@@ -249,3 +249,30 @@ INSERT INTO missions_emp (miss_id, emp_id) VALUES
 -- -- Попытка вставить в mission с несуществующим camp_id
 -- INSERT INTO mission (camp_id, start_date_and_time, end_date_and_time, legal_status, departure_location, arrival_location, enemies) VALUES
 -- (999, '2023-01-10 08:00:00', '2023-01-15 18:00:00', TRUE, 'Base Alpha', 'Base Bravo', 'None'); -- Это завершится неудачей из-за ограничения внешнего ключа
+
+-- Simple Queries and Aggregations
+-- Count of Employees by Marital Status
+SELECT is_married, COUNT(*) AS employee_count
+FROM employee
+GROUP BY is_married;
+
+--Average Salary by Position
+SELECT p.name AS position_name, AVG(p.salary_rub) AS average_salary
+FROM position p
+JOIN employee e ON p.pos_id = e.pos_id
+GROUP BY p.name;
+
+-- Total Earnings and Spending for Campaigns
+SELECT name, SUM(earning) AS total_earning, SUM(spending) AS total_spending
+FROM campaign
+GROUP BY name;
+
+-- List of Employees with Medical Information
+SELECT e.name, e.surname, mc.height_cm, mc.weight_kg, mc.blood
+FROM employee e
+JOIN medical_card mc ON e.emp_id = mc.emp_id;
+
+--Count of Missions by Execution Status
+SELECT execution_status, COUNT(*) AS mission_count
+FROM campaign
+GROUP BY execution_status;
