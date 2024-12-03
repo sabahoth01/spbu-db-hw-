@@ -37,15 +37,15 @@ CREATE TABLE mre
 CREATE TABLE equipment
 (
     equip_id      SERIAL PRIMARY KEY,
-    camouflage    TEXT,
-    communication TEXT,
-    intelligence  TEXT,
+    camouflage    VARCHAR(100),
+    communication VARCHAR(100),
+    intelligence  VARCHAR(100),
     medical       TEXT,
     mre_id        INTEGER NOT NULL REFERENCES mre ON DELETE RESTRICT, --foreign key
-    extra         TEXT
+    extra         VARCHAR(50)
 );
 
-CREATE TYPE force AS ENUM ('GF', 'NAVY', 'AF');
+CREATE TYPE force_category AS ENUM ('GF', 'NAVY', 'AF');
 
 --numeric(10,2):Точность (10): указывает общее количество значащих цифр, которые могут быть сохранены в этом столбце. В этом случае зарплата может содержать до 10 цифр.
 --Шкала (2): Указывает количество цифр, которые могут быть сохранены справа от десятичной точки. Здесь это означает, что для обозначения дробной части (центов) можно использовать 2 цифры.
@@ -57,7 +57,7 @@ CREATE TABLE position
     salary_rub   NUMERIC(10, 2) NOT NULL CHECK (salary_rub >= 50000),
     rank     VARCHAR(100),
     equip_id INTEGER        REFERENCES equipment ON DELETE SET NULL, --foreign key
-    forces   force
+    forces   force_category
 );
 
 CREATE TABLE employee
@@ -157,3 +157,74 @@ CREATE TABLE missions_emp
     PRIMARY KEY (miss_id, emp_id)
 );
 
+-- Good Data Population// Заполнение таблицы
+
+-- Insert into base
+INSERT INTO base (location, status) VALUES
+('Base Alpha', 'OPEN'),
+('Base Bravo', 'CLOSED');
+
+-- Insert into mre
+INSERT INTO mre (breakfast, lunch, dinner, food_additives, kkal, proteins, fats, carbohydrate) VALUES
+('Oatmeal', 'Chicken Stew', 'Beef Jerky', 'None', 3500, 60, 50, 300),
+('Pasta', 'Tuna Salad', 'Fruit Mix', 'None', 4000, 70, 60, 350);
+
+-- Insert into equipment
+INSERT INTO equipment (camouflage, communication, intelligence, medical, mre_id, extra) VALUES
+('Green', 'Radio', 'Drone', 'First Aid Kit', 1, 'None'),
+('Desert', 'Satellite Phone', 'Recon', 'Med Kit', 2, 'None');
+
+-- Insert into position
+INSERT INTO position (name, salary_rub, rank, equip_id, forces) VALUES
+('Rifleman', 60000, 'Private', 1, 'GF'),
+('Sniper', 80000, 'Corporal', 2, 'NAVY');
+
+-- Insert into employee
+INSERT INTO employee (name, surname, date_of_birth, education, hiring_date, pos_id, is_married, base_id) VALUES
+('John', 'Doe', '1990-01-01', 'High School', '2023-01-01', 1, TRUE, 1),
+('Jane', 'Smith', '1985-05-15', 'Bachelor', '2023-02-01', 2, FALSE, 2);
+
+-- Insert into medical_card
+INSERT INTO medical_card (emp_id, height_cm, weight_kg, diseases, blood, gender) VALUES
+(1, 180, 75, 'None', 'A', 'M'),
+(2, 165, 60, 'None', 'B', 'F');
+
+-- Insert into weapon
+INSERT INTO weapon (name, type, caliber, rate_of_fire, sighting_range_m) VALUES
+('M4 Carbine', 'Rifle', 5.56, 700, 600),
+('M24 Sniper', 'Sniper Rifle', 7.62, 40, 800);
+
+-- Insert into campaign
+INSERT INTO campaign (name, customer, earning, spending, execution_status) VALUES
+('Operation Alpha', 'Department of Defense', 1000000.00, 500000.00, 'FINISHED'),
+('Operation Bravo', 'NATO', 2000000.00, 1500000.00, 'ON_GOING');
+
+-- Insert into mission
+INSERT INTO mission (camp_id, start_date_and_time, end_date_and_time, legal_status, departure_location, arrival_location, enemies) VALUES
+(1, '2023-01-10 08:00:00', '2023-01-15 18:00:00', TRUE, 'Base Alpha', 'Base Bravo', 'None'),
+(2, '2023-02-20 09:00:00', '2023-02-25 17:00:00', TRUE, 'Base Bravo', 'Base Alpha', 'Enemy Forces');
+
+-- Insert into transport
+INSERT INTO transport (name, type, status) VALUES
+('Transport Truck', 'Ground', 'VERIFIED'),
+('Helicopter', 'Air', 'NEED_VERIFICATION');
+
+-- Insert into equip_weapon
+INSERT INTO equip_weapon (equip_id, weapon_id) VALUES
+(1, 1),
+(2, 2);
+
+-- Insert into missions_transport
+INSERT INTO missions_transport (miss_id, trans_id) VALUES
+(1, 1),
+(2, 2);
+
+-- Insert into inspection
+INSERT INTO inspection (emp_id, trans_id, service_date) VALUES
+(1, 1, '2023-01-05'),
+(2, 2, '2023-02-15');
+
+-- Insert into missions_emp
+INSERT INTO missions_emp (miss_id, emp_id) VALUES
+(1, 1),
+(2, 2);
