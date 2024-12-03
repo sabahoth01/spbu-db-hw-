@@ -228,3 +228,24 @@ INSERT INTO inspection (emp_id, trans_id, service_date) VALUES
 INSERT INTO missions_emp (miss_id, emp_id) VALUES
 (1, 1),
 (2, 2);
+
+-- some example of bad population // Заполнение таблицы с ошибками; Плохая популяция данных (Эти операции завершатся неудачей из-за ограничений)
+--
+-- -- Попытка вставить в базу с недопустимым статусом
+-- INSERT INTO base (location, status) VALUES ('Base Charlie', 'INVALID_STATUS'); -- Это завершится неудачей из-за ограничения ENUM
+-- --
+-- -- Попытка вставить в mre с недопустимым значением kkal
+-- INSERT INTO mre (breakfast, lunch, dinner, food_additives, kkal, proteins, fats, carbohydrate) VALUES
+-- ('Oatmeal', 'Chicken Stew', 'Beef Jerky', 'None', 2500, 60, 50, 300); -- Это завершится неудачей из-за ограничения CHECK на kkal
+-- --
+-- -- Попытка вставить в employee с недопустимой датой рождения (несовершеннолетний)
+-- INSERT INTO employee (name, surname, date_of_birth, education, hiring_date, pos_id, is_married, base_id) VALUES
+-- ('Alice', 'Johnson', '2010-01-01', 'High School', '2023-01-01', 1, TRUE, 1); -- Это завершится неудачей из-за ограничения CHECK по возрасту
+-- --
+-- -- Попытка вставить в medical_card с недопустимым типом крови
+-- INSERT INTO medical_card (emp_id, height_cm, weight_kg, diseases, blood, gender) VALUES
+-- (1, 180, 75, 'None', 'RED', 'M'); -- Это завершится неудачей из-за ограничения ENUM
+--
+-- -- Попытка вставить в mission с несуществующим camp_id
+-- INSERT INTO mission (camp_id, start_date_and_time, end_date_and_time, legal_status, departure_location, arrival_location, enemies) VALUES
+-- (999, '2023-01-10 08:00:00', '2023-01-15 18:00:00', TRUE, 'Base Alpha', 'Base Bravo', 'None'); -- Это завершится неудачей из-за ограничения внешнего ключа
