@@ -265,7 +265,8 @@ GROUP BY p.name;
 -- Total Earnings and Spending for Campaigns
 SELECT name, SUM(earning) AS total_earning, SUM(spending) AS total_spending
 FROM campaign
-GROUP BY name;
+GROUP BY name
+LIMIT 10;
 
 -- List of Employees with Medical Information
 SELECT e.name, e.surname, mc.height_cm, mc.weight_kg, mc.blood
@@ -275,4 +276,33 @@ JOIN medical_card mc ON e.emp_id = mc.emp_id;
 --Count of Missions by Execution Status
 SELECT execution_status, COUNT(*) AS mission_count
 FROM campaign
-GROUP BY execution_status;
+GROUP BY execution_status
+LIMIT 10;
+
+-- Общая сумма доходов и расходов по кампаниям с учетом нормы прибыли
+-- Этот запрос рассчитывает общую сумму доходов, расходов и нормы прибыли для каждой кампании.
+SELECT
+    name AS campaign_name,
+    earning,
+    spending,
+    (earning - spending) AS profit,
+    (earning - spending) / NULLIF(earning, 0) * 100 AS profit_margin_percentage
+FROM
+    campaign
+ORDER BY
+    profit DESC
+LIMIT 10;
+
+-- Количество сотрудников по статусу базы
+-- Этот запрос подсчитывает количество сотрудников на каждой базе, сгруппированных по статусу базы (ОТКРЫТА или ЗАКРЫТА).
+SELECT
+    b.status AS base_status,
+    COUNT(e.emp_id) AS employee_count
+FROM
+    base b
+LEFT JOIN
+    employee e ON b.base_id = e.base_id
+GROUP BY
+    b.status
+ORDER BY
+    base_status;
