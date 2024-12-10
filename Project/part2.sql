@@ -56,3 +56,16 @@ LEFT JOIN
 
 SELECT * FROM mission_summary;
 
+-- MATERIALIZED VIEW
+CREATE MATERIALIZED VIEW campaign_profit AS
+SELECT
+    camp_id,
+    name,
+    customer,
+    earning,
+    spending,
+    earning - spending AS profit
+FROM campaign;
+REFRESH MATERIALIZED VIEW campaign_profit;
+SELECT * FROM campaign_profit;
+
