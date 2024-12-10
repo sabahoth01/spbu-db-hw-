@@ -133,3 +133,76 @@ JOIN missions_emp me ON e.emp_id = me.emp_id
 JOIN mission m ON me.miss_id = m.miss_id;
 SELECT * FROM temp_emp_missions;
 
+-- RECURSIVE
+WITH RECURSIVE employee_mission_hierarchy AS (
+    -- Base case: Start from a specific employee
+    SELECT
+        e.emp_id,
+        e.name AS employee_name,
+        e.surname AS employee_surname,
+        m.miss_id,
+        m.start_date_and_time,
+        m.end_date_and_time
+    FROM employee e
+    JOIN missions_emp me ON e.emp_id = me.emp_id
+    JOIN mission m ON me.miss_id = m.miss_id
+    WHERE e.emp_id = 1  -- Start with an employee (e.g., employee_id = 1)
+
+    UNION ALL
+
+    -- Recursive case: Find all missions this employee was assigned to
+    SELECT
+        e.emp_id,
+        e.name AS employee_name,
+        e.surname AS employee_surname,
+        m.miss_id,
+        m.start_date_and_time,
+        m.end_date_and_time
+    FROM employee e
+    JOIN missions_emp me ON e.emp_id = me.emp_id
+    JOIN mission m ON me.miss_id = m.miss_id
+    JOIN employee_mission_hierarchy emh ON m.miss_id = emh.miss_id  -- Recursively find missions
+)
+SELECT
+    employee_name,
+    employee_surname,
+    miss_id,
+    start_date_and_time,
+    end_date_and_time
+FROM employee_mission_hierarchy;
+
+WITH RECURSIVE weapon_mission_path AS (
+    -- Base case: Start from a specific weapon
+    SELECT
+        w.weapon_id,
+        w.name AS weapon_name,
+        m.miss_id,
+        m.start_date_and_time,
+        m.end_date_and_time
+    FROM weapon w
+    JOIN equip_weapon ew ON w.weapon_id = ew.weapon_id
+    JOIN missions_emp me ON ew.equip_id = me.emp_id
+    JOIN mission m ON me.miss_id = m.miss_id
+    WHERE w.weapon_id = 1  -- For example, start from a specific weapon
+
+    UNION ALL
+
+    -- Recursive case: Find the next mission where this weapon is used
+    SELECT
+        w.weapon_id,
+        w.name AS weapon_name,
+        m.miss_id,
+        m.start_date_and_time,
+        m.end_date_and_time
+    FROM weapon w
+    JOIN equip_weapon ew ON w.weapon_id = ew.weapon_id
+    JOIN missions_emp me ON ew.equip_id = me.emp_id
+    JOIN mission m ON me.miss_id = m.miss_id
+    JOIN weapon_mission_path wmp ON m.miss_id = wmp.miss_id  -- Recursively find related missions
+)
+SELECT
+    weapon_name,
+    miss_id,
+    start_date_and_time,
+    end_date_and_time
+FROM weapon_mission_path;
