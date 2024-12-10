@@ -1,4 +1,3 @@
-
 -- Data normalization
 -- Step 1: `employee_base`
 CREATE TABLE employee_base (
@@ -17,4 +16,6 @@ WHERE base_id IS NOT NULL;
 ALTER TABLE employee
 DROP COLUMN base_id;
 
-select * from employee_base;-- проверка если миграция успешна пошла
+select * from employee_base;-- проверка если миграция успешна пошлаSELECT * FROM employee
+LIMIT 2;-- проверка если миграция успешна пошла
+
