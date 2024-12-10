@@ -53,10 +53,10 @@ CREATE TYPE force_category AS ENUM ('GF', 'NAVY', 'AF');
 CREATE TABLE position
 (
     pos_id   SERIAL PRIMARY KEY,
-    name     VARCHAR(255)           NOT NULL,
+    name     VARCHAR(255)       NOT NULL,
     salary_rub   NUMERIC(10, 2) NOT NULL CHECK (salary_rub >= 50000),
     rank     VARCHAR(100),
-    equip_id INTEGER        REFERENCES equipment ON DELETE SET NULL, --foreign key
+    equip_id INTEGER   REFERENCES equipment ON DELETE SET NULL, --foreign key
     forces   force_category
 );
 
