@@ -69,3 +69,54 @@ FROM campaign;
 REFRESH MATERIALIZED VIEW campaign_profit;
 SELECT * FROM campaign_profit;
 
+-- CTE
+WITH employee_health_summary AS (
+    SELECT
+        e.emp_id,
+        e.name,
+        e.surname,
+        m.height_cm,
+        m.weight_kg,
+        m.blood
+    FROM employee e
+    JOIN medical_card m ON e.emp_id = m.emp_id
+)
+SELECT
+    name,
+    surname,
+    height_cm,
+    weight_kg,
+    blood,
+    CASE
+        WHEN height_cm < 160 THEN 'Short'
+        WHEN height_cm BETWEEN 160 AND 180 THEN 'Average'
+        WHEN height_cm > 180 THEN 'Tall'
+    END AS height_category,
+    CASE
+        WHEN weight_kg < 60 THEN 'Underweight'
+        WHEN weight_kg BETWEEN 60 AND 80 THEN 'Normal weight'
+        WHEN weight_kg > 80 THEN 'Overweight'
+    END AS weight_category
+FROM employee_health_summary;
+
+WITH transport_availability AS (
+    SELECT
+        t.trans_id,
+        t.name AS transport_name,
+        t.status,
+        m.start_date_and_time,
+        CURRENT_TIMESTAMP AS current_time
+    FROM transport t
+    LEFT JOIN missions_transport mt ON t.trans_id = mt.trans_id
+    LEFT JOIN mission m ON mt.miss_id = m.miss_id
+)
+SELECT
+    transport_name,
+    CASE
+        WHEN status = 'OUT_OF_USE' OR status = 'NOT_MAINTAINED' THEN 'Not Available'
+        WHEN start_date_and_time > CURRENT_TIMESTAMP THEN 'Available'
+        ELSE 'In Use'
+    END AS availability_status
+FROM transport_availability;
+select * from equipment;
+
