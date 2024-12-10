@@ -120,3 +120,16 @@ SELECT
 FROM transport_availability;
 select * from equipment;
 
+-- TEMP_TABLE
+CREATE TEMPORARY TABLE temp_emp_missions AS
+SELECT
+    e.emp_id,
+    e.name AS employee_name,
+    m.miss_id,
+    m.start_date_and_time,
+    m.end_date_and_time
+FROM employee e
+JOIN missions_emp me ON e.emp_id = me.emp_id
+JOIN mission m ON me.miss_id = m.miss_id;
+SELECT * FROM temp_emp_missions;
+
