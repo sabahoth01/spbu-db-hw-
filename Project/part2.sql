@@ -206,3 +206,31 @@ SELECT
     start_date_and_time,
     end_date_and_time
 FROM weapon_mission_path;
+
+-- INDEXES
+CREATE INDEX idx_employee_pos_id ON employee USING HASH(pos_id);
+CREATE INDEX idx_position_pos_id ON position USING HASH(pos_id);
+CREATE INDEX idx_mission_camp_id ON mission USING HASH(camp_id);
+CREATE INDEX idx_campaign_camp_id ON campaign USING HASH(camp_id);
+CREATE INDEX idx_missions_transport_miss_id ON missions_transport USING HASH(miss_id);
+CREATE INDEX idx_transport_trans_id ON transport USING HASH(trans_id);
+CREATE INDEX idx_employee_emp_id ON employee USING HASH(emp_id);
+CREATE INDEX idx_employee_emp_name ON employee(name);
+CREATE INDEX idx_employee_emp_surname ON employee(surname);
+CREATE INDEX idx_medical_card_emp_id ON medical_card USING HASH(emp_id);
+CREATE INDEX idx_mission_miss_id ON mission USING HASH(miss_id);
+
+--EXPLAIN ANALYZE
+EXPLAIN ANALYZE
+SELECT * FROM employee_details
+         WHERE salary_rub > 80000
+         ORDER BY salary_rub
+         DESC
+         LIMIT 5;
+
+SELECT relname , indexrelname , idx_scan , idx_tup_read , idx_tup_fetch
+FROM pg_stat_user_indexes
+WHERE schemaname = 'public' and
+  relname in ('campaign');
+
+VACUUM;
