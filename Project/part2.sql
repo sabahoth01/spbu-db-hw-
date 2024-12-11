@@ -31,11 +31,12 @@ SELECT
     p.rank
 FROM employee e
 JOIN position p ON e.pos_id = p.pos_id;
+--bпровепка
 SELECT * FROM employee_details
-         WHERE salary_rub > 80000
-         ORDER BY salary_rub
-         DESC
-         LIMIT 5;
+WHERE salary_rub > 80000
+ORDER BY salary_rub
+DESC
+LIMIT 5;
 
 CREATE VIEW mission_summary AS --вернет краткую информацию о каждой миссии, связанном с ней названии кампании, клиенте и используемом транспорте (если таковой имеется).
 SELECT
@@ -53,9 +54,9 @@ LEFT JOIN
     missions_transport mt ON m.miss_id = mt.miss_id
 LEFT JOIN
     transport t ON mt.trans_id = t.trans_id;
-
+-- ПРОВЕРКА
 SELECT * FROM mission_summary
-LIMIT 5;-- ПРОВЕРКА
+LIMIT 5;
 
 -- MATERIALIZED VIEW
 CREATE MATERIALIZED VIEW campaign_profit AS --сохраняет результат запроса, который вычисляет прибыль от каждой кампании (доходы - расходы).
