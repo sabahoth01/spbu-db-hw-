@@ -13,12 +13,12 @@ WHERE base_id IS NOT NULL;
 -- Step 3: Remove the `base_id` column from the `employee` table
 ALTER TABLE employee
 DROP COLUMN base_id;
-
+-- проверка если миграция успешна пошла
 SELECT * FROM employee
-LIMIT 2;-- проверка если миграция успешна пошла
+LIMIT 2;
 
 -- VIEWS
-CREATE VIEW employee_details AS
+CREATE VIEW employee_details AS -- вернет список сотрудников вместе с информацией о связанных с ними должностях (имя, зарплата  и т.д.).
 SELECT
     e.emp_id,
     e.name AS employee_name,
@@ -37,7 +37,7 @@ SELECT * FROM employee_details
          DESC
          LIMIT 5;
 
-CREATE VIEW mission_summary AS
+CREATE VIEW mission_summary AS --вернет краткую информацию о каждой миссии, связанном с ней названии кампании, клиенте и используемом транспорте (если таковой имеется).
 SELECT
     m.miss_id,
     m.start_date_and_time,
@@ -58,7 +58,7 @@ SELECT * FROM mission_summary
 LIMIT 5;-- ПРОВЕРКА
 
 -- MATERIALIZED VIEW
-CREATE MATERIALIZED VIEW campaign_profit AS
+CREATE MATERIALIZED VIEW campaign_profit AS --сохраняет результат запроса, который вычисляет прибыль от каждой кампании (доходы - расходы).
 SELECT
     camp_id,
     name,
@@ -67,22 +67,24 @@ SELECT
     spending,
     earning - spending AS profit
 FROM campaign;
-
+--обновляет данные в материализованном представлении campaign_profit.
 REFRESH MATERIALIZED VIEW campaign_profit;
-
+-- Проверка
 SELECT * FROM campaign_profit
 ORDER BY profit
 DESC
-LIMIT 2;-- Проверка
+LIMIT 2;
 
 -- CTE
-WITH employee_health_summary AS (
+WITH employee_health_summary AS ( -- извлекает основные медицинские данные (рост, вес, группа крови) из таблиц employee и medical_card, объединяя их с помощью emp_id.
     SELECT
         e.emp_id,
         e.name,
         e.surname,
         m.height_cm,
         m.weight_kg,
+        m.diseases,
+        m.gender,
         m.blood
     FROM employee e
     JOIN medical_card m ON e.emp_id = m.emp_id
@@ -93,6 +95,8 @@ SELECT
     height_cm,
     weight_kg,
     blood,
+    diseases,
+    gender,
     CASE
         WHEN height_cm < 160 THEN 'Short'
         WHEN height_cm BETWEEN 160 AND 180 THEN 'Average'
@@ -100,12 +104,12 @@ SELECT
     END AS height_category,
     CASE
         WHEN weight_kg < 60 THEN 'Underweight'
-        WHEN weight_kg BETWEEN 60 AND 80 THEN 'Normal weight'
-        WHEN weight_kg > 80 THEN 'Overweight'
+        WHEN weight_kg BETWEEN 60 AND 150 THEN 'Normal weight'
+        WHEN weight_kg > 150 THEN 'Overweight'
     END AS weight_category
 FROM employee_health_summary;
 
-WITH transport_availability AS (
+WITH transport_availability AS ( -- возвращает список названий транспортных средств со статусом их доступности
     SELECT
         t.trans_id,
         t.name AS transport_name,
@@ -126,22 +130,25 @@ SELECT
 FROM transport_availability;
 
 -- TEMP_TABLE
-CREATE TEMPORARY TABLE temp_emp_missions AS
+CREATE TEMPORARY TABLE temp_employee_availability AS -- Временная таблица для проверки доступности сотрудников в зависимости от их назначенных заданий. Может использоваться для просмотра того, кто может быть назначен на новое задание.
 SELECT
     e.emp_id,
     e.name AS employee_name,
-    m.miss_id,
-    m.start_date_and_time,
-    m.end_date_and_time
+    e.surname,
+    CASE
+        WHEN m.miss_id IS NULL THEN 'Available'
+        ELSE 'Not Available'
+    END AS availability_status
 FROM employee e
-JOIN missions_emp me ON e.emp_id = me.emp_id
-JOIN mission m ON me.miss_id = m.miss_id;
-
-SELECT * FROM temp_emp_missions
-LIMIT 2;-- проверка
+LEFT JOIN missions_emp me ON e.emp_id = me.emp_id
+LEFT JOIN mission m ON me.miss_id = m.miss_id
+WHERE m.end_date_and_time <= CURRENT_TIMESTAMP OR m.miss_id IS NULL;
+-- проверка
+SELECT * FROM temp_employee_availability
+LIMIT 5;
 
 -- RECURSIVE
-WITH RECURSIVE employee_mission_hierarchy AS (
+WITH RECURSIVE employee_mission_hierarchy AS ( --извлекает все задания, назначенные конкретному сотруднику (начиная с emp_id сотрудника = 1).
     -- Base case: Start from a specific employee
     SELECT
         e.emp_id,
@@ -176,7 +183,7 @@ SELECT
     end_date_and_time
 FROM employee_mission_hierarchy;
 
-WITH RECURSIVE weapon_mission_path AS (
+WITH RECURSIVE weapon_mission_path AS ( -- отслеживает использование определенного оружия (начиная с weapon_id = 1) в миссиях.
     -- Base case: Start from a specific weapon
     SELECT
         w.weapon_id,
@@ -211,26 +218,32 @@ SELECT
 FROM weapon_mission_path;
 
 -- INDEXES
+CREATE INDEX idx_employee_base_emp_id ON employee_base USING HASH(emp_id);  --hash index
+CREATE INDEX idx_employee_base_base_id ON employee_base USING HASH(base_id);
 CREATE INDEX idx_employee_pos_id ON employee USING HASH(pos_id);
+CREATE INDEX idx_employee_emp_id ON employee USING HASH(emp_id);
+CREATE INDEX idx_employee_emp_name ON employee(name); --b-tree index by default
+CREATE INDEX idx_employee_emp_surname ON employee(surname);
 CREATE INDEX idx_position_pos_id ON position USING HASH(pos_id);
 CREATE INDEX idx_mission_camp_id ON mission USING HASH(camp_id);
+CREATE INDEX idx_mission_start_date ON mission(start_date_and_time);
+CREATE INDEX idx_mission_end_date ON mission(end_date_and_time);
+CREATE INDEX idx_mission_miss_id ON mission USING HASH(miss_id);
 CREATE INDEX idx_campaign_camp_id ON campaign USING HASH(camp_id);
 CREATE INDEX idx_missions_transport_miss_id ON missions_transport USING HASH(miss_id);
 CREATE INDEX idx_transport_trans_id ON transport USING HASH(trans_id);
-CREATE INDEX idx_employee_emp_id ON employee USING HASH(emp_id);
-CREATE INDEX idx_employee_emp_name ON employee(name);
-CREATE INDEX idx_employee_emp_surname ON employee(surname);
 CREATE INDEX idx_medical_card_emp_id ON medical_card USING HASH(emp_id);
-CREATE INDEX idx_mission_miss_id ON mission USING HASH(miss_id);
+CREATE INDEX idx_equip_weapon_weapon_id ON equip_weapon USING HASH(weapon_id);
+CREATE INDEX idx_employee_weapon_name ON weapon(name);
 
 --EXPLAIN ANALYZE
-EXPLAIN ANALYZE
-SELECT * FROM employee_details
-         WHERE salary_rub > 80000
-         ORDER BY salary_rub
-         DESC
-         LIMIT 5;
+EXPLAIN ANALYZE SELECT * FROM employee_details
+WHERE salary_rub > 80000
+ORDER BY salary_rub
+DESC
+LIMIT 5;
 
+-- index usage per table//отслеживает использование определенного оружия (начиная с weapon_id = 1) в миссиях.
 SELECT relname , indexrelname , idx_scan , idx_tup_read , idx_tup_fetch
 FROM pg_stat_user_indexes
 WHERE schemaname = 'public' and
