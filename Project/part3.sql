@@ -108,6 +108,7 @@ CREATE TRIGGER close_base_trigger
 AFTER DELETE ON employee_base
 FOR EACH ROW
 EXECUTE FUNCTION close_base_if_empty();
+-----
 --  open base if it has at least one employee
 CREATE OR REPLACE FUNCTION open_base_if_not_empty()
 RETURNS TRIGGER AS $$
@@ -133,6 +134,7 @@ AFTER INSERT ON employee_base
 FOR EACH ROW
 EXECUTE FUNCTION open_base_if_not_empty();
 -----
+
 -- Trigger for campaigns to automatically refresh materialized view
 CREATE OR REPLACE FUNCTION refresh_campaign_profit()
 RETURNS TRIGGER AS $$
@@ -151,6 +153,7 @@ FOR EACH STATEMENT
 EXECUTE FUNCTION refresh_campaign_profit();
 
 ---
+-- prevent overlap of mission(one employee can not be sent to 2 different missions in the same time)
 CREATE OR REPLACE FUNCTION check_periods_of_emp_missions() RETURNS trigger AS $$
 DECLARE
     start_time TIMESTAMP;
@@ -245,12 +248,53 @@ EXECUTE FUNCTION check_transport_status_before_mission();
 -- 3. transaction
 BEGIN;
 
+-- Step 1: Check if the employee is medically eligible for the mission
+-- This is handled by the trigger 'check_employee_medical_eligibility' when inserting the record into missions_emp
+
+-- Step 2: Check if the employee is available for the mission (overlap check handled by trigger 'check_emp_mission_period')
+-- No action needed here since it's enforced by the trigger.
+
+-- Step 3: Check if the transport assigned to the mission is in a suitable status (MAINTAINED or VERIFIED)
+DO $$
+DECLARE
+    transport_valid BOOLEAN;
+BEGIN
+    -- Check transport status before assignment
+    SELECT EXISTS (
+        SELECT 1
+        FROM transport
+        WHERE trans_id = 3  -- Replace with the actual transport ID
+          AND status IN ('VERIFIED', 'MAINTAINED')
+    ) INTO transport_valid;
+
+    -- If the result is FALSE, raise an exception
+    IF NOT transport_valid THEN
+        RAISE EXCEPTION 'Transport is not in an acceptable status.';
+    END IF;
+END $$;
+
+-- Step 4: Assign the employee to the mission
+INSERT INTO missions_emp(miss_id, emp_id)
+VALUES (16, 11); -- Replace with actual mission and employee IDs
+
+-- Step 5: Assign transport to the mission (if the status is appropriate)
+INSERT INTO missions_transport(miss_id, trans_id)
+VALUES (16, 3); -- Replace with actual transport ID
+
+-- Step 6: Update campaign status to FINISHED if all associated missions have ended
+CALL update_campaign_status_to_finished();
+
+COMMIT;
+--
+BEGIN;
+
 -- Step 1: Check if the employee is qualified for the mission
 DO $$
 DECLARE
     emp_qualified BOOLEAN;
 BEGIN
     -- Check qualifications using the function, which returns a boolean
+    emp_qualified := check_qualifications(13, 'Medic'); -- Replace 1 with employee ID and 'Security' with required position name
 
     -- If the result is FALSE, raise an exception
     IF NOT emp_qualified THEN
@@ -258,6 +302,8 @@ BEGIN
     END IF;
 END $$;
 
+-- Step 2: Check if the employee is medically eligible for the mission
+-- This is handled by the trigger 'check_employee_medical_eligibility' when inserting the record into missions_emp
 
 -- Step 3: Check if the employee is available for the mission (overlap check handled by trigger 'check_emp_mission_period')
 -- No action needed here since it's enforced by the trigger.
@@ -268,6 +314,12 @@ DECLARE
     transport_valid BOOLEAN;
 BEGIN
     -- Check transport status before assignment
+    SELECT EXISTS (
+        SELECT 1
+        FROM transport
+        WHERE trans_id = 3  -- Replace with the actual transport ID
+          AND status IN ('VERIFIED', 'MAINTAINED')
+    ) INTO transport_valid;
 
     -- If the result is FALSE, raise an exception
     IF NOT transport_valid THEN
@@ -277,11 +329,16 @@ END $$;
 
 -- Step 5: Assign the employee to the mission
 INSERT INTO missions_emp(miss_id, emp_id)
+VALUES (20, 13); -- Replace with actual mission and employee IDs
 
 -- Step 6: Assign transport to the mission (if the status is appropriate)
 INSERT INTO missions_transport(miss_id, trans_id)
+VALUES (20, 3); -- Replace with actual transport ID
 
+-- Step 7: Update campaign status to FINISHED if all associated missions have ended
+CALL update_campaign_status_to_finished();
 
+COMMIT;
 
 --updates
 -- Creating or updating the temporary table to include unmarried, available, experienced employees, and their mission count and marital status
@@ -299,3 +356,26 @@ ORDER BY is_married,               -- Sort unmarried employees first
          availability_status DESC, -- Sort by availability (Available first)
          emp_id;  -- Final sorting by emp_id for consistency (if needed)
 
+CREATE INDEX mission_period ON mission USING btree(start_date_and_time, end_date_and_time);
+
+--procedure
+CREATE OR REPLACE PROCEDURE update_campaign_status_to_finished()
+LANGUAGE plpgsql AS $$
+BEGIN
+    -- Update execution status to 'FINISHED' for campaigns where all associated missions have ended
+    UPDATE campaign c
+    SET execution_status = 'FINISHED'
+    WHERE c.camp_id IN (
+        SELECT m.camp_id
+        FROM mission m
+        WHERE m.legal_status = TRUE
+        GROUP BY m.camp_id
+        HAVING COUNT(*) = COUNT(CASE WHEN m.end_date_and_time < CURRENT_TIMESTAMP THEN 1 END)
+    )
+    AND c.execution_status != 'FINISHED';  -- Only update if not already finished
+
+    RAISE NOTICE 'Campaign statuses updated to FINISHED for campaigns with all missions completed.';
+END;
+$$;
+
+call update_campaign_status_to_finished();
