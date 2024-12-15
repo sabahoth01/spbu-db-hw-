@@ -109,8 +109,6 @@ AFTER DELETE ON employee_base
 FOR EACH ROW
 EXECUTE FUNCTION close_base_if_empty();
 
-CREATE TRIGGER close_base_trigger
-AFTER DELETE ON employee_base
 FOR EACH ROW
 -----
 -- Trigger for campaigns to automatically refresh materialized view
