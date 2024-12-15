@@ -287,3 +287,5 @@ ORDER BY is_married,               -- Sort unmarried employees first
          missions_count DESC,      -- Sort by mission count (most experienced first)
          availability_status DESC, -- Sort by availability (Available first)
          emp_id;  -- Final sorting by emp_id for consistency (if needed)
+
+CREATE INDEX mission_period ON mission USING btree(start_date_and_time, end_date_and_time);
