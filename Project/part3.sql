@@ -224,3 +224,53 @@ CREATE TRIGGER check_transport_status_before_addition
 BEFORE INSERT ON missions_transport
 FOR EACH ROW
 EXECUTE FUNCTION check_transport_status_before_mission();
+
+-- 3. transaction
+BEGIN;
+
+-- Step 1: Check if the employee is qualified for the mission
+DO $$
+DECLARE
+    emp_qualified BOOLEAN;
+BEGIN
+    -- Check qualifications using the function, which returns a boolean
+    emp_qualified := check_qualifications(1, 'Security'); -- Replace 1 with employee ID and 'Security' with required position name
+
+    -- If the result is FALSE, raise an exception
+    IF NOT emp_qualified THEN
+        RAISE EXCEPTION 'Employee is not qualified for the position.';
+    END IF;
+END $$;
+
+-- Step 2: Medical eligibility is checked via the trigger when inserting the record into missions_emp, no action needed here.
+
+-- Step 3: Check if the employee is available for the mission (overlap check handled by trigger 'check_emp_mission_period')
+-- No action needed here since it's enforced by the trigger.
+
+-- Step 4: Check if the transport assigned to the mission is in a suitable status (MAINTAINED or VERIFIED)
+DO $$
+DECLARE
+    transport_valid BOOLEAN;
+BEGIN
+    -- Check transport status before assignment
+    transport_valid := check_transport_status_before_mission(); -- This function should return TRUE or FALSE
+
+    -- If the result is FALSE, raise an exception
+    IF NOT transport_valid THEN
+        RAISE EXCEPTION 'Transport is not in an acceptable status.';
+    END IF;
+END $$;
+
+-- Step 5: Assign the employee to the mission
+INSERT INTO missions_emp(miss_id, emp_id)
+VALUES (16, 1); -- Replace with actual mission and employee IDs
+
+-- Step 6: Assign transport to the mission (if the status is appropriate)
+INSERT INTO missions_transport(miss_id, trans_id)
+VALUES (16, 3); -- Replace with actual transport ID
+
+COMMIT;
+
+
+--updates
+-- Creating or updating the temporary table to include unmarried, available, experienced employees, and their mission count and marital status
