@@ -53,7 +53,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
 -- 2. Triggers
 --Trigger Function to check medical eligibility for all tasks
 CREATE OR REPLACE FUNCTION check_employee_medical_eligibility()
@@ -108,12 +107,9 @@ AFTER DELETE ON employee_base
 FOR EACH ROW
 EXECUTE FUNCTION close_base_if_empty();
 
-
--- Trigger to check and close the base when an employee is removed from it
 CREATE TRIGGER close_base_trigger
 AFTER DELETE ON employee_base
 FOR EACH ROW
-EXECUTE FUNCTION close_base_if_empty();
 -----
 -- Trigger for campaigns to automatically refresh materialized view
 CREATE OR REPLACE FUNCTION refresh_campaign_profit()
@@ -133,7 +129,6 @@ FOR EACH STATEMENT
 EXECUTE FUNCTION refresh_campaign_profit();
 
 ---
-
 CREATE OR REPLACE FUNCTION check_periods_of_emp_missions() RETURNS trigger AS $$
 DECLARE
     start_time TIMESTAMP;
@@ -234,7 +229,6 @@ DECLARE
     emp_qualified BOOLEAN;
 BEGIN
     -- Check qualifications using the function, which returns a boolean
-    emp_qualified := check_qualifications(1, 'Security'); -- Replace 1 with employee ID and 'Security' with required position name
 
     -- If the result is FALSE, raise an exception
     IF NOT emp_qualified THEN
@@ -242,7 +236,6 @@ BEGIN
     END IF;
 END $$;
 
--- Step 2: Medical eligibility is checked via the trigger when inserting the record into missions_emp, no action needed here.
 
 -- Step 3: Check if the employee is available for the mission (overlap check handled by trigger 'check_emp_mission_period')
 -- No action needed here since it's enforced by the trigger.
@@ -253,7 +246,6 @@ DECLARE
     transport_valid BOOLEAN;
 BEGIN
     -- Check transport status before assignment
-    transport_valid := check_transport_status_before_mission(); -- This function should return TRUE or FALSE
 
     -- If the result is FALSE, raise an exception
     IF NOT transport_valid THEN
@@ -263,13 +255,10 @@ END $$;
 
 -- Step 5: Assign the employee to the mission
 INSERT INTO missions_emp(miss_id, emp_id)
-VALUES (16, 1); -- Replace with actual mission and employee IDs
 
 -- Step 6: Assign transport to the mission (if the status is appropriate)
 INSERT INTO missions_transport(miss_id, trans_id)
-VALUES (16, 3); -- Replace with actual transport ID
 
-COMMIT;
 
 
 --updates
@@ -288,4 +277,3 @@ ORDER BY is_married,               -- Sort unmarried employees first
          availability_status DESC, -- Sort by availability (Available first)
          emp_id;  -- Final sorting by emp_id for consistency (if needed)
 
-CREATE INDEX mission_period ON mission USING btree(start_date_and_time, end_date_and_time);
