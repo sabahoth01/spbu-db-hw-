@@ -20,6 +20,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+SELECT check_qualifications(1, 'Security'); -- Returns TRUE or FALSE based on employee qualifications.
+
 -- Function to get unmarried, available, and experienced employees (both unmarried and married)
 CREATE OR REPLACE FUNCTION get_experienced_available_employees()
 RETURNS TABLE (
