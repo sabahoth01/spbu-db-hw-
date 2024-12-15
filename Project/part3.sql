@@ -274,3 +274,16 @@ COMMIT;
 
 --updates
 -- Creating or updating the temporary table to include unmarried, available, experienced employees, and their mission count and marital status
+CREATE TEMPORARY TABLE temp_employee_availability AS
+SELECT
+    emp_id,
+    employee_name,
+    employee_surname,
+    availability_status,
+    missions_count,  -- Include the mission count in the temporary table
+    is_married       -- Include the marital status in the temporary table
+FROM get_experienced_available_employees()  -- Use the function to fetch the data
+ORDER BY is_married,               -- Sort unmarried employees first
+         missions_count DESC,      -- Sort by mission count (most experienced first)
+         availability_status DESC, -- Sort by availability (Available first)
+         emp_id;  -- Final sorting by emp_id for consistency (if needed)
