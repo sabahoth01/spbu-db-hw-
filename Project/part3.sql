@@ -108,8 +108,30 @@ CREATE TRIGGER close_base_trigger
 AFTER DELETE ON employee_base
 FOR EACH ROW
 EXECUTE FUNCTION close_base_if_empty();
+--  open base if it has at least one employee
+CREATE OR REPLACE FUNCTION open_base_if_not_empty()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Check if there is at least one employee assigned to the base
+    IF EXISTS (
+        SELECT 1
+        FROM employee_base eb
+        WHERE eb.base_id = NEW.base_id  -- Use NEW.base_id since the row is inserted
+    ) THEN
+        -- If at least one employee is assigned, open the base
+        UPDATE base
+        SET status = 'OPEN'
+        WHERE base_id = NEW.base_id;
+    END IF;
+    RETURN NEW;  -- Return NEW because it's an AFTER INSERT trigger
+END;
+$$ LANGUAGE plpgsql;
 
+-- Trigger to check and open the base when an employee is added to it
+CREATE TRIGGER open_base_trigger
+AFTER INSERT ON employee_base
 FOR EACH ROW
+EXECUTE FUNCTION open_base_if_not_empty();
 -----
 -- Trigger for campaigns to automatically refresh materialized view
 CREATE OR REPLACE FUNCTION refresh_campaign_profit()
