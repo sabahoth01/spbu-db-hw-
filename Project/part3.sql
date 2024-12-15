@@ -164,7 +164,6 @@ BEFORE INSERT ON missions_emp
 FOR EACH ROW
 EXECUTE FUNCTION check_periods_of_emp_missions();
 
-
 --6. Function to update the transport status after an inspection
 CREATE OR REPLACE FUNCTION update_transport_status_after_inspection() RETURNS trigger AS $$
 BEGIN
@@ -209,7 +208,6 @@ BEGIN
     RETURN NEW; -- If the status is correct, allow the insert
 END;
 $$ LANGUAGE plpgsql;
-
 -- Trigger to call the function before adding transport to a mission
 CREATE TRIGGER check_transport_status_before_addition
 BEFORE INSERT ON missions_transport
@@ -219,7 +217,6 @@ EXECUTE FUNCTION check_transport_status_before_mission();
 -- C. transaction
 -- 1. Assign an employee to a mission with different checking:
 BEGIN;
-
 -- Step 1: Check if the employee is medically eligible for the mission
 -- This is handled by the trigger 'check_employee_medical_eligibility' when inserting the record into missions_emp
 
